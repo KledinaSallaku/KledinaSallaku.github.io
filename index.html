@@ -879,6 +879,10 @@ function labelFor(i, page) {
   if (i === 0) return 'Cover';
   const ref = page != null ? page : (i === LAST ? 2 * i - 2 : 2 * i - 1);
   let t = ''; for (const s of sections) { if (s.page <= ref) t = s.title; }
+  if (page == null && !isSingle(i)) {                   // two projects facing each other on one spread: name both
+    const a = sections.find(s => s.page === ref - 1), b = sections.find(s => s.page === ref);
+    if (a && b) t = a.title + ' · ' + b.title;
+  }
   return t || 'Portfolio';
 }
 function settle() {
@@ -930,7 +934,13 @@ function buildPages() {
 }
 function trackScroll() {
   scrollT = 0; if (mode !== 'pages') return;
-  const mid = scroller.scrollTop + scroller.clientHeight / 2; let best = null, bd = 1e9;
+  /* the page being read is the one under a line near the top of the list, so a page brought to the top (an index link)
+     is the one named. The last pages cannot be scrolled up that far: from where the last page that can reach the top
+     does, the line slides down to the bottom edge, and the last page is named at the end. */
+  const kids = scroller.children, H = scroller.clientHeight, max = Math.max(0, scroller.scrollHeight - H), top = Math.max(0, Math.min(max, scroller.scrollTop));
+  let from = 0; for (let k = kids.length - 1; k >= 0; k--) { if (kids[k].offsetTop - 6 <= max) { from = kids[k].offsetTop - 6; break; } }
+  const line = Math.min(H * 0.3, 6 + (kids.length ? kids[0].offsetHeight : 0) * 0.6);
+  const mid = top + line + (H - line) * (top <= from ? 0 : Math.min(1, (top - from) / Math.max(1, max - from))); let best = null, bd = 1e9;
   for (const d of scroller.children) { const c = d.offsetTop + d.offsetHeight / 2, dist = Math.abs(c - mid); if (dist < bd) { bd = dist; best = d; } }
   if (!best) return;
   const a = +best.dataset.abs; cur = +best.dataset.s;
