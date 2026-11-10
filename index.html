@@ -92,7 +92,8 @@ button.lab:hover{color:var(--ink)}
 .tint{position:absolute;inset:0;background:var(--ink);opacity:0;pointer-events:none}
 .scroller{position:absolute;inset:0;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:10px;padding:6px 1px 24px;-webkit-overflow-scrolling:touch}
 .pg{flex:none;display:block;width:100%;aspect-ratio:420/297;background-color:var(--paper);background-repeat:no-repeat;box-shadow:0 0 0 1px var(--hair);cursor:zoom-in}
-.foot{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px 16px;padding-top:8px}
+.foot{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:6px 16px;padding-top:8px}
+.foot > .lab{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;padding-block:3px}   /* a long title is cut short; it never moves the page arrows */
 .dock{display:flex;align-items:center;gap:2px;padding:1px 4px}
 .nav{width:44px;height:34px;display:grid;place-items:center;border-radius:7px;color:var(--ink);transition:opacity .25s, transform .3s cubic-bezier(.3,1.5,.5,1)}
 .nav:hover:not(:disabled){transform:scale(1.14)}
@@ -130,7 +131,7 @@ button.lab:hover{color:var(--ink)}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 
 @media (max-width:720px){
-  .foot{grid-template-columns:1fr auto}
+  .foot{grid-template-columns:minmax(0,1fr) auto}
   .foot .hint{display:none}
   .hud{display:none}
   .lab{letter-spacing:.13em}
