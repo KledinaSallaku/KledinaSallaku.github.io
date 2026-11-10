@@ -1,0 +1,852 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Kledina Sallaku | Architecture and Computational Design Portfolio</title><meta name="description" content="Selected works 2019-2026: computational design research, architectural design and projects from practice."><meta name="robots" content="noindex, noarchive"><meta name="author" content="Kledina Sallaku"><meta name="theme-color" content="#ffffff"><meta property="og:type" content="website"><meta property="og:title" content="Kledina Sallaku | Architecture and Computational Design Portfolio"><meta property="og:description" content="Selected works 2019-2026: computational design research, architectural design and projects from practice."><meta property="og:url" content="https://kledinasallaku.github.io/"><meta property="og:image" content="https://kledinasallaku.github.io/og.jpg"><meta name="twitter:card" content="summary_large_image"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='3' width='26' height='26' rx='7' fill='white' stroke='%235e35b1' stroke-width='1.5'/%3E%3Cpath d='M10 22 22 10M14.5 10H22v7.5' fill='none' stroke='%235e35b1' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><style>:root{color-scheme:light;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);box-sizing:border-box}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
+<title>Kledina Sallaku Portfolio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Extra+Condensed:wght@200;300;400&family=Saira+Semi+Condensed:wght@300;400;500&display=swap">
+<style>
+/* Layout: one white screen. Cover = a small menu of hairline purple frames over a dense flock of thin arrows, with a
+   live readout of the simulation. Book = one centred spread, a rigid page turn, the same hairline frames for controls.
+   A single light look on purpose: the pages are white paper and the site is their mat. */
+:root{
+  --paper:#ffffff; --ink:#111111; --grey:#a2a0a8; --hair:#e6e4ec;
+  --accent:#5e35b1; --accent-soft:#b7a5e1;
+  --line:rgba(94,53,177,.5); --frost-a:rgba(255,255,255,.66); --frost-b:rgba(255,255,255,.4); --frost-on:rgba(255,255,255,.8);
+  --frost-hi:rgba(255,255,255,.92); --frost-shade:rgba(58,36,124,.3);
+  --page-shade:rgba(17,17,17,.34);
+  --display:"Saira Extra Condensed","Agency FB","Arial Narrow",sans-serif;
+  --text:"Saira Semi Condensed","Segoe UI",system-ui,sans-serif;
+  --ease:cubic-bezier(.42,.08,.2,1);
+}
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--text);overflow:hidden;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+*,*::before,*::after{box-sizing:border-box}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+a{color:inherit}
+:focus-visible{outline:1.5px solid var(--accent);outline-offset:4px}
+
+#flock{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;transition:opacity .7s ease}
+#app{position:relative;z-index:1;height:100%;display:grid;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.view{grid-area:1/1;min-width:0;min-height:0;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .45s ease, visibility 0s linear .45s}
+#app[data-view="home"] .home,#app[data-view="book"] .book{opacity:1;visibility:visible;pointer-events:auto;transition:opacity .6s ease .08s, visibility 0s}
+#app[data-view="book"] + #flock{opacity:0}
+
+/* small uppercase label in the portfolio's light grey, used for all chrome */
+.lab{font:400 12px/1.2 var(--text);letter-spacing:.17em;text-transform:uppercase;color:var(--grey);white-space:nowrap}
+button.lab{padding:11px 0;transition:color .25s}
+button.lab:hover{color:var(--ink)}
+
+/* the portfolio's own frame, in frosted glass: a hairline purple rectangle with rounded corners whose inside blurs and
+   lightens whatever passes behind it. The line is half a pixel wherever the screen can draw one. */
+.box{border:.5px solid var(--line);border-radius:var(--r,10px);
+  background:linear-gradient(180deg,var(--frost-a),var(--frost-b));
+  -webkit-backdrop-filter:blur(9px) saturate(1.7);backdrop-filter:blur(9px) saturate(1.7);
+  box-shadow:inset 0 1px 0 var(--frost-hi), 0 12px 28px -20px var(--frost-shade)}
+
+/* ---------------------------------------------------------------- cover */
+.home{display:grid;grid-template-rows:auto 1fr auto;padding-block:clamp(14px,3vh,30px);padding-inline:clamp(0px,4.2vw,68px)}
+.row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px 28px;flex-wrap:wrap}
+.lab.wrap{white-space:normal;line-height:1.5;max-width:100%}
+.reveal p .lab{min-width:2.2em;padding:0}
+.row.end{align-items:flex-end}
+.acts{--fs:clamp(19px, min(5.6vw, 3.7vh), 27px);align-self:center;justify-self:center;display:grid;justify-items:stretch;width:max-content;max-width:100%;gap:10px}   /* the menu sits in the middle of the flock's volume */
+.cap{min-width:0;font:300 var(--fs)/1.1 var(--display);letter-spacing:.024em;
+  transition:background-color .3s ease, min-width .55s var(--ease), transform .3s cubic-bezier(.3,1.5,.5,1)}
+.cap:hover{background:linear-gradient(180deg,var(--frost-on),var(--frost-a))}
+.cap:active{transform:scale(.985)}
+.act{display:block;width:100%;text-align:center;border-radius:inherit;font:inherit;letter-spacing:inherit;color:var(--ink);padding:.52em 1.6em .58em}
+.act:focus-visible{outline-offset:-4px}
+.reveal{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows .55s var(--ease), opacity .4s ease;font:300 14.5px/1.6 var(--text);letter-spacing:.012em}
+.reveal.open{grid-template-rows:1fr;opacity:1}
+.reveal > div{overflow:hidden;min-height:0;padding-inline:calc(var(--fs) * 1.15);width:0;min-width:100%}   /* adds no width to a closed frame */
+.reveal p{margin:0;display:flex;flex-wrap:wrap;align-items:baseline;justify-content:center;gap:0 16px}
+.reveal p:last-child{padding-bottom:calc(var(--fs) * .55)}
+.reveal a{text-decoration:none;border-bottom:1px solid var(--hair);transition:border-color .25s}
+.reveal a:hover{border-color:var(--accent)}
+.reveal .lab{padding:4px 0}
+.sel{user-select:all;-webkit-user-select:all}
+.side{display:flex;flex-direction:column;align-items:flex-end;gap:0}
+.side button.lab{padding:8px 0 0;font-size:10.5px}
+.hud{margin:0;display:flex;flex-direction:column;align-items:flex-end;gap:6px;font:400 10.5px/1.2 var(--text);letter-spacing:.17em;text-transform:uppercase;color:var(--grey);font-variant-numeric:tabular-nums;white-space:pre;text-align:right}
+
+/* ---------------------------------------------------------------- book */
+.book{display:grid;grid-template-rows:auto 1fr auto;padding-block:clamp(6px,1.4vh,14px);padding-inline:clamp(0px,1.6vw,24px)}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:8px 20px;flex-wrap:wrap}
+.bar nav{display:flex;gap:clamp(14px,2.2vw,26px);padding:0 16px}
+.stage{position:relative;min-height:0;min-width:0;display:grid;place-items:center}
+.sheet{position:relative;width:var(--sw,10px);height:var(--sh,10px);transform:translateX(var(--shift,0%));transition:transform var(--turn,820ms) var(--ease)}
+.paper{position:absolute;top:0;bottom:0;left:var(--pl,0%);right:var(--pr,0%);background:var(--paper);
+  box-shadow:0 0 0 1px var(--hair), 0 26px 60px -34px var(--page-shade);transition:left var(--turn,820ms) var(--ease), right var(--turn,820ms) var(--ease)}
+.rest{position:absolute;top:0;left:0;width:100%;height:100%;cursor:zoom-in;display:block}
+.rest.is-r{left:50%;width:50%}
+.rest.is-l{width:50%}
+.flip{position:absolute;inset:0;perspective:2800px;perspective-origin:50% 50%;pointer-events:none}
+.h{position:absolute;top:0;height:100%;overflow:hidden}
+.h canvas,.face canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block}
+.h.l{left:0;width:calc(50% + .5px)}
+.h.r{right:0;width:calc(50% + .5px)}
+.leaf{position:absolute;top:0;left:50%;width:50%;height:100%;transform-origin:0 50%;transform-style:preserve-3d;will-change:transform}
+.face{position:absolute;inset:0;overflow:hidden;background:var(--paper);backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.face.front{box-shadow:1px 0 0 0 var(--hair)}
+.face.back{transform:rotateY(180deg);box-shadow:-1px 0 0 0 var(--hair)}
+.tint{position:absolute;inset:0;background:var(--ink);opacity:0;pointer-events:none}
+.scroller{position:absolute;inset:0;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:10px;padding:6px 1px 24px;-webkit-overflow-scrolling:touch}
+.pg{flex:none;display:block;width:100%;aspect-ratio:420/297;background-color:var(--paper);background-repeat:no-repeat;box-shadow:0 0 0 1px var(--hair);cursor:zoom-in}
+.foot{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px 16px;padding-top:8px}
+.dock{display:flex;align-items:center;gap:2px;padding:1px 4px}
+.nav{width:44px;height:34px;display:grid;place-items:center;border-radius:7px;color:var(--ink);transition:opacity .25s, transform .3s cubic-bezier(.3,1.5,.5,1)}
+.nav:hover:not(:disabled){transform:scale(1.14)}
+.nav:disabled{opacity:.22;cursor:default}
+.nav svg{display:block;width:22px;height:12px;fill:none;stroke:currentColor;stroke-width:1.1;stroke-linecap:round;stroke-linejoin:round}
+.num{font:300 21px/1 var(--display);letter-spacing:.06em;font-variant-numeric:tabular-nums;min-width:6.4ch;text-align:center;transition:opacity .3s}
+.foot .hint{justify-self:end}
+.foot.loading .num{opacity:.3}
+.prog{grid-column:1/-1;height:1px;background:var(--hair);position:relative;margin-top:6px}
+.prog i{position:absolute;left:0;top:0;height:1px;background:var(--accent);width:0;transition:width .5s var(--ease)}
+
+/* ---------------------------------------------------------------- overlays */
+.over,.scroller{scrollbar-width:thin;scrollbar-color:var(--hair) transparent}
+.over{position:fixed;inset:0;z-index:30;background:var(--paper);overflow:auto;overscroll-behavior:contain;
+  padding:calc(10px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(28px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  animation:fade .35s ease both}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.over-bar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding-inline:clamp(0px,1.6vw,24px);position:sticky;top:0;background:var(--paper);z-index:2}
+.over-bar span{display:flex;gap:clamp(14px,2.4vw,30px)}
+.index-body{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:34px clamp(24px,5vw,80px);max-width:1280px;margin:clamp(18px,6vh,70px) auto 0;padding-inline:clamp(0px,4.2vw,68px)}
+.chap h2{margin:0 0 14px;font:400 12px/1.2 var(--text);letter-spacing:.17em;text-transform:uppercase;color:var(--grey)}
+.chap ol{list-style:none;margin:0;padding:0}
+.chap li button{width:100%;display:flex;justify-content:space-between;align-items:baseline;gap:14px;text-align:left;padding:5px 0;
+  font:300 clamp(24px,2.5vw,32px)/1.12 var(--display);letter-spacing:.012em;border-bottom:1px solid transparent;transition:color .2s, border-color .2s}
+.chap li button:hover{color:var(--accent);border-color:var(--hair)}
+.chap li button b{font-weight:300;font-variant-numeric:tabular-nums;color:var(--grey)}
+.resume-body{max-width:860px;margin:18px auto 0;display:flex;flex-direction:column;gap:18px}
+.resume-body img{display:block;width:100%;height:auto;box-shadow:0 0 0 1px var(--hair), 0 26px 60px -34px var(--page-shade)}
+.zoom{z-index:40;padding:0;cursor:zoom-out;touch-action:pan-x pan-y}
+.zoom.drag{cursor:grabbing}
+.zoom img{display:block;max-width:none;width:var(--zw,200vw);height:auto;margin:0 auto;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
+.zoom .lab{position:fixed;top:calc(10px + env(safe-area-inset-top, 0px));right:calc(18px + env(safe-area-inset-right, 0px));padding:10px 16px;z-index:2;color:var(--ink)}
+.toast{position:fixed;left:50%;bottom:calc(74px + env(safe-area-inset-bottom, 0px));transform:translate(-50%,8px);z-index:60;padding:10px 18px;
+  font:400 12px/1 var(--text);letter-spacing:.14em;text-transform:uppercase;color:var(--ink);opacity:0;pointer-events:none;transition:opacity .3s, transform .3s}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+@media (max-width:720px){
+  .foot{grid-template-columns:1fr auto}
+  .foot .hint{display:none}
+  .hud{display:none}
+  .lab{letter-spacing:.13em}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition-duration:.01ms!important;animation-duration:.01ms!important}
+  .cap:active{transform:none}
+}
+</style>
+
+<div id="app" data-view="home">
+  <main class="view home" id="home">
+    <div class="row">
+      <span class="lab">Kledina Sallaku</span>
+      <span class="lab wrap">Architecture and Computational Design Portfolio</span>
+    </div>
+    <div class="acts">
+      <div class="cap box"><button class="act" data-act="book">View portfolio</button></div>
+      <div class="cap box">
+        <button class="act" data-act="contact" aria-expanded="false" aria-controls="contact">Get in touch</button>
+        <div class="reveal" id="contact"><div>
+          <p><span class="sel" id="mail">kledinasallaku@outlook.com</span><button class="lab" id="copyMail">Copy</button></p>
+          <p><span class="lab">UK</span><span class="sel">+44 7546 077640</span></p>
+          <p><span class="lab">AL</span><span class="sel">+355 692471466</span></p>
+          <p><a href="https://www.linkedin.com/in/kledina-s-96063718b" target="_blank" rel="noopener">LinkedIn &nearr;</a><a href="https://github.com/KledinaSallaku" target="_blank" rel="noopener">GitHub &nearr;</a></p>
+        </div></div>
+      </div>
+      <div class="cap box"><button class="act" data-act="resume">Download resume</button></div>
+    </div>
+    <div class="row end">
+      <span class="lab">Selected works 2019&ndash;2026</span>
+      <div class="side">
+        <p class="hud" id="hud" aria-hidden="true"><span id="hudA">&nbsp;</span><span id="hudB">&nbsp;</span></p>
+        <button class="lab" id="bounds" aria-label="Switch the flock's bounds between a ball and a cube">Bounds: sphere</button>
+      </div>
+    </div>
+  </main>
+
+  <section class="view book" id="book" aria-label="Portfolio">
+    <div class="bar">
+      <button class="lab" id="toHome">Kledina Sallaku</button>
+      <nav class="box">
+        <button class="lab" id="openIndex">Index</button>
+        <button class="lab" id="openResume">Resume</button>
+        <button class="lab" id="openContact">Contact</button>
+      </nav>
+    </div>
+    <div class="stage" id="stage">
+      <div class="sheet" id="sheet">
+        <div class="paper"></div>
+        <canvas class="rest" id="rest" role="img" aria-label="Portfolio pages. Click to zoom."></canvas>
+        <div class="flip" id="flip" hidden>
+          <div class="h l" id="hL"><canvas id="cUL"></canvas><i class="tint" id="tUL"></i></div>
+          <div class="h r" id="hR"><canvas id="cUR"></canvas><i class="tint" id="tUR"></i></div>
+          <div class="leaf" id="leaf">
+            <div class="face front"><canvas id="cF"></canvas><i class="tint" id="tF"></i></div>
+            <div class="face back"><canvas id="cB"></canvas><i class="tint" id="tB"></i></div>
+          </div>
+        </div>
+      </div>
+      <div class="scroller" id="scroller" hidden></div>
+    </div>
+    <div class="foot" id="foot">
+      <span class="lab" id="where">Cover</span>
+      <div class="dock box">
+        <button class="nav" id="prev" aria-label="Previous pages"><svg viewBox="0 0 22 12" aria-hidden="true"><path d="M21 6H1M6 1 1 6l5 5"/></svg></button>
+        <span class="num" id="num" aria-live="polite">&nbsp;</span>
+        <button class="nav" id="next" aria-label="Next pages"><svg viewBox="0 0 22 12" aria-hidden="true"><path d="M1 6h20M16 1l5 5-5 5"/></svg></button>
+      </div>
+      <span class="lab hint" id="hint">Click a page to zoom</span>
+      <div class="prog"><i id="prog"></i></div>
+    </div>
+  </section>
+</div>
+<canvas id="flock" aria-hidden="true"></canvas>
+
+<div class="over" id="index" hidden role="dialog" aria-label="Index">
+  <div class="over-bar"><span class="lab">Index</span><span><button class="lab" data-close>Close</button></span></div>
+  <div class="index-body" id="indexBody"></div>
+</div>
+<div class="over" id="resume" hidden role="dialog" aria-label="Resume">
+  <div class="over-bar"><span class="lab">Resume</span><span><button class="lab" id="dlResume" hidden>Download PDF</button><button class="lab" data-close>Close</button></span></div>
+  <div class="resume-body" id="resumeBody"></div>
+</div>
+<div class="over zoom" id="zoom" hidden role="dialog" aria-label="Zoomed page">
+  <button class="lab box" id="zoomClose">Close</button>
+  <img id="zoomImg" alt="Portfolio pages, enlarged" draggable="false">
+</div>
+<div class="toast box" id="toast" role="status"></div>
+
+<script>
+(function () {
+'use strict';
+const BOOK = /*BOOK:START*/{"sheets": 44, "pages": 86, "resumePages": 2, "chapters": [{"title": "Computational work", "page": 5, "projects": [{"title": "Surrogate Models of Residential Energy Use", "page": 6}, {"title": "Neuroevolutionary Voxel Towers", "page": 14}, {"title": "Emergence Tower", "page": 20}, {"title": "Evolving Tower Morphologies", "page": 30}, {"title": "Sun Apertures", "page": 36}, {"title": "The Reclamation of Time", "page": 42}, {"title": "Urban Morphology Generation", "page": 46}]}, {"title": "Architectural design work", "page": 55, "projects": [{"title": "Tirana Railway Station", "page": 56}, {"title": "Vocational High School", "page": 62}, {"title": "House +", "page": 66}, {"title": "Observatory Tower", "page": 68}, {"title": "Hammam of Durrës", "page": 70}, {"title": "Kore House", "page": 72}]}, {"title": "Practice works", "page": 75, "projects": [{"title": "Golem Beach Apartments", "page": 76}, {"title": "Vasil Shanto Tower", "page": 78}, {"title": "New Bazaar Tower", "page": 79}, {"title": "BLVD Residential", "page": 80}, {"title": "Tirana Gateway", "page": 81}, {"title": "Bashtova", "page": 82}]}], "built": "kledina potfolio.pdf"}/*BOOK:END*/;
+const RESUME_PDF = 'resume/Kledina-Sallaku-Resume.pdf';
+const RESUME_NAME = 'Kledina-Sallaku-Resume.pdf';
+const $ = (s, r) => (r || document).querySelector(s);
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const app = $('#app');
+const tokens = getComputedStyle(document.documentElement);
+const tok = (n, d) => (tokens.getPropertyValue(n) || '').trim() || d;
+const caps = Array.from(document.querySelectorAll('.cap'));
+
+/* ============================================================== flock ==
+   A flock of thin arrows in three dimensions, held in a volume in the middle of the page that turns slowly. The
+   rules are those of the Grasshopper script supplied with the brief (K. Elashry 2019, after A. Turner 2009 and
+   D. Shiffman, The Nature of Code): every boid keeps a unit direction; alignment, cohesion, separation and an
+   attraction point each add a unit vector times a factor; the sum is unitized and the boid moves at its speed.
+   Ball: each boid's attraction point travels on its own great circle, in seven streams, so the flock keeps the shape
+   of a ball. Cube: the boids fly free and the bounds wrap around, as in the script. The cursor is one more attraction
+   point, a click turns it into a push, and a pointed-at menu frame gathers a small swarm that circles inside it. */
+const Flock = (function () {
+  const cv = $('#flock'), ctx = cv.getContext('2d');
+  const K = { neigh: 46, sepDist: 15, sep: 0.16, tether: 0.13, pointer: 0.05, speed: 1.45, orbit: 76 };
+  const BALL = { ali: 0.06, coh: 0.012 }, CUBE = { ali: 0.09, coh: 0.03 };
+  const MAX = 1800, HEAD = 2.7, CA = 0.883, SA = 0.469, FOCAL = 1150;       // arrow head: 2.7 px strokes at 28 degrees
+  const AXES = [[0, 1, 0], [1, 0, 0], [0, 0, 1], [1, 1, 1], [1, -1, 1], [-1, 1, 1], [1, 1, -1]];
+  const A = n => new Float32Array(n);
+  const X = A(MAX), Y = A(MAX), Z = A(MAX), DX = A(MAX), DY = A(MAX), DZ = A(MAX), SP = A(MAX), LEN = A(MAX), BOOST = A(MAX);
+  const UX = A(MAX), UY = A(MAX), UZ = A(MAX), VX = A(MAX), VY = A(MAX), VZ = A(MAX), ORAD = A(MAX), OTH = A(MAX), OSG = A(MAX);
+  const PA = A(MAX), PR = A(MAX), PW = A(MAX), PZ = A(MAX);
+  const SX0 = A(MAX), SY0 = A(MAX), SX1 = A(MAX), SY1 = A(MAX), SS = A(MAX);
+  const HELD = new Uint8Array(MAX), CURIOUS = new Uint8Array(MAX), BUCK = new Uint8Array(MAX);
+  const next = new Int32Array(MAX);
+  let head = new Int32Array(1), gn = 1, B = 1;
+  let W = 0, H = 0, CX = 0, CY = 0, R = 200, dpr = 1, N = 0, raf = 0, last = 0, on = false, tick = 0, heldCap = -1, lenses = [];
+  let yaw = 0.6, pitch = 0.2, cyw = 1, syw = 0, cpt = 1, spt = 0, shape = 'sphere', cubeFade = 0;
+  const t0 = performance.now();
+  const pointer = { x: 0, y: 0, seen: -1e9 };
+  const burstS = { x: 0, y: 0, z: 0, sx: 0, sy: 0, r: 0, start: -1e9 };
+  const colA = tok('--accent', '#5e35b1'), colS = tok('--accent-soft', '#b7a5e1');
+  const hudA = $('#hudA'), hudB = $('#hudB');
+  const out = [0, 0, 0];
+  try { const s = localStorage.getItem('flockBounds'); if (s === 'cube' || s === 'sphere') shape = s; } catch (e) {}
+
+  function camToWorld(x2, y2, z2) {
+    const y1 = y2 * cpt + z2 * spt, z1 = -y2 * spt + z2 * cpt;
+    out[0] = x2 * cyw - z1 * syw; out[1] = y1; out[2] = x2 * syw + z1 * cyw;
+  }
+  function worldToCam(x, y, z) {
+    const x1 = x * cyw + z * syw, z1 = -x * syw + z * cyw;
+    out[0] = x1; out[1] = y * cpt - z1 * spt; out[2] = y * spt + z1 * cpt;
+  }
+  function anchor(i, tt) {                              // where boid i's own attraction point is on its great circle
+    const ang = OTH[i] + OSG[i] * K.orbit / (R * ORAD[i]) * tt, c = Math.cos(ang) * R * ORAD[i], s = Math.sin(ang) * R * ORAD[i];
+    out[0] = UX[i] * c + VX[i] * s; out[1] = UY[i] * c + VY[i] * s; out[2] = UZ[i] * c + VZ[i] * s;
+  }
+  function seed(i) {
+    const g = i % AXES.length, a = AXES[g];
+    let nx = a[0] + (Math.random() - 0.5) * 0.7, ny = a[1] + (Math.random() - 0.5) * 0.7, nz = a[2] + (Math.random() - 0.5) * 0.7, m = Math.hypot(nx, ny, nz);
+    nx /= m; ny /= m; nz /= m;
+    let ux = ny * 0.31 - nz * 0.77, uy = nz * 0.55 - nx * 0.31, uz = nx * 0.77 - ny * 0.55;      // any vector across the axis
+    m = Math.hypot(ux, uy, uz) || 1; ux /= m; uy /= m; uz /= m;
+    UX[i] = ux; UY[i] = uy; UZ[i] = uz; VX[i] = ny * uz - nz * uy; VY[i] = nz * ux - nx * uz; VZ[i] = nx * uy - ny * ux;
+    ORAD[i] = 0.4 + 0.56 * Math.pow(Math.random(), 0.55); OTH[i] = Math.random() * 6.2832; OSG[i] = g % 2 ? 1 : -1;
+    anchor(i, 0);
+    X[i] = out[0] + (Math.random() - 0.5) * 24; Y[i] = out[1] + (Math.random() - 0.5) * 24; Z[i] = out[2] + (Math.random() - 0.5) * 24;
+    const t = OTH[i], c = -Math.sin(t) * OSG[i], s = Math.cos(t) * OSG[i];
+    DX[i] = ux * c + VX[i] * s; DY[i] = uy * c + VY[i] * s; DZ[i] = uz * c + VZ[i] * s;
+    SP[i] = 0.86 + Math.random() * 0.34; LEN[i] = 6 + Math.random() * 4;
+    BOOST[i] = 0; HELD[i] = 0; CURIOUS[i] = Math.random() < 0.5 ? 1 : 0;
+  }
+  function readLenses() {
+    lenses = caps.map(c => { const b = c.getBoundingClientRect(); return { w: b.width, h: b.height, cx: b.left + b.width / 2, cy: b.top + b.height / 2 }; });
+  }
+  function resize() {
+    const w = window.innerWidth, h = window.innerHeight;
+    if (!w || !h) return;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const first = !W;
+    W = w; H = h; CX = W / 2; CY = H / 2; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    R = Math.min(400, Math.min(W, H) * 0.4);
+    B = R * 1.35; gn = Math.ceil(2 * B / K.neigh) + 1; head = new Int32Array(gn * gn * gn);
+    const want = Math.max(520, Math.min(MAX, Math.round(4.19 * R * R * R / 52000)));
+    for (let i = N; i < want; i++) seed(i);
+    N = want;
+    if (first) { cubeFade = shape === 'cube' ? 1 : 0; for (let k = 0; k < 200; k++) step(1, t0 + k * 16); }
+    readLenses(); draw(); hud(performance.now());
+  }
+  const gi = v => { const q = ((v + B) / K.neigh) | 0; return q < 0 ? 0 : (q >= gn ? gn - 1 : q); };
+  function step(f, now) {
+    const live = now - pointer.seen < 2600, tt = (now - t0) * 0.001;
+    const blend = 1 - Math.pow(0.92, f);
+    yaw += (0.6 + tt * 0.1 + (live ? (pointer.x / W - 0.5) * 0.7 : 0) - yaw) * blend;
+    pitch += (0.2 + (live ? (pointer.y / H - 0.5) * 0.45 : 0) - pitch) * blend;
+    cyw = Math.cos(yaw); syw = Math.sin(yaw); cpt = Math.cos(pitch); spt = Math.sin(pitch);
+    cubeFade += ((shape === 'cube' ? 1 : 0) - cubeFade) * (1 - Math.pow(0.9, f));
+    let hx = 0, hy = 0, hz = 0;
+    if (live) { camToWorld(pointer.x - CX, pointer.y - CY, 0); hx = out[0]; hy = out[1]; hz = out[2]; }
+    const reach = R * 0.8;
+    const bt = Math.max(0, 1 - (now - burstS.start) / 760), relax = 1 - bt * 0.92;
+    const L = heldCap >= 0 ? lenses[heldCap] : null;
+    const cube = shape === 'cube', half = R * 0.74, kAli = cube ? CUBE.ali : BALL.ali, kCoh = cube ? CUBE.coh : BALL.coh;
+    head.fill(-1);
+    for (let i = 0; i < N; i++) { const c = gi(X[i]) + gn * (gi(Y[i]) + gn * gi(Z[i])); next[i] = head[c]; head[c] = i; }
+    const n2 = K.neigh * K.neigh, s2 = K.sepDist * K.sepDist, ease = 1 - Math.pow(0.88, f), decay = Math.pow(0.955, f);
+    for (let i = 0; i < N; i++) {
+      const xi = X[i], yi = Y[i], zi = Z[i];
+      if (HELD[i]) {                                   // circling inside a menu frame, in the picture plane
+        if (!L) { HELD[i] = 0; continue; }
+        PA[i] += PW[i] * f;
+        worldToCam(xi, yi, zi);
+        const tx = L.cx - CX + Math.cos(PA[i]) * Math.max(6, L.w / 2 - 11) * PR[i], ty = L.cy - CY + Math.sin(PA[i]) * Math.max(3, L.h / 2 - 8) * PR[i];
+        camToWorld(out[0] + (tx - out[0]) * ease, out[1] + (ty - out[1]) * ease, out[2] + (PZ[i] - out[2]) * ease);
+        const mx = out[0] - xi, my = out[1] - yi, mz = out[2] - zi, mm = Math.hypot(mx, my, mz);
+        X[i] = out[0]; Y[i] = out[1]; Z[i] = out[2];
+        if (mm > 0.04) { DX[i] += (mx / mm - DX[i]) * 0.35; DY[i] += (my / mm - DY[i]) * 0.35; DZ[i] += (mz / mm - DZ[i]) * 0.35; const q = Math.hypot(DX[i], DY[i], DZ[i]) || 1; DX[i] /= q; DY[i] /= q; DZ[i] /= q; }
+        continue;
+      }
+      let ax = 0, ay = 0, az = 0, cx = 0, cy = 0, cz = 0, n = 0, sx = 0, sy = 0, sz = 0;
+      const gx = gi(xi), gy = gi(yi), gz = gi(zi);
+      for (let oz = -1; oz <= 1; oz++) {
+        const rz = gz + oz; if (rz < 0 || rz >= gn) continue;
+        for (let oy = -1; oy <= 1; oy++) {
+          const ry = gy + oy; if (ry < 0 || ry >= gn) continue;
+          for (let ox = -1; ox <= 1; ox++) {
+            const rx = gx + ox; if (rx < 0 || rx >= gn) continue;
+            for (let j = head[rx + gn * (ry + gn * rz)]; j !== -1; j = next[j]) {
+              if (j === i || HELD[j]) continue;
+              const dx = X[j] - xi, dy = Y[j] - yi, dz = Z[j] - zi, d2 = dx * dx + dy * dy + dz * dz;
+              if (d2 >= n2) continue;
+              ax += DX[j]; ay += DY[j]; az += DZ[j]; cx += X[j]; cy += Y[j]; cz += Z[j]; n++;
+              if (d2 > 0 && d2 < s2) { const d = Math.sqrt(d2); sx -= dx / d; sy -= dy / d; sz -= dz / d; }
+            }
+          }
+        }
+      }
+      let fx = 0, fy = 0, fz = 0, m;
+      m = Math.hypot(ax, ay, az); if (m > 0) { fx += ax / m * kAli; fy += ay / m * kAli; fz += az / m * kAli; }                       // alignment
+      if (n) { const vx = cx / n - xi, vy = cy / n - yi, vz = cz / n - zi; m = Math.hypot(vx, vy, vz); if (m > 0) { fx += vx / m * kCoh; fy += vy / m * kCoh; fz += vz / m * kCoh; } }   // cohesion
+      m = Math.hypot(sx, sy, sz); if (m > 0) { fx += sx / m * K.sep; fy += sy / m * K.sep; fz += sz / m * K.sep; }                    // separation
+      if (!cube) {                                                                                                                   // its own attraction point, on the ball
+        anchor(i, tt);
+        const vx = out[0] - xi, vy = out[1] - yi, vz = out[2] - zi; m = Math.hypot(vx, vy, vz);
+        if (m > 0.5) { const k = K.tether * Math.min(1, m / 70) * relax; fx += vx / m * k; fy += vy / m * k; fz += vz / m * k; }
+      }
+      if (live && CURIOUS[i]) { const vx = hx - xi, vy = hy - yi, vz = hz - zi; m = Math.hypot(vx, vy, vz);                           // attraction point: the cursor
+        if (m > 1 && m < reach) { fx += vx / m * K.pointer; fy += vy / m * K.pointer; fz += vz / m * K.pointer; } }
+      if (bt > 0) { const vx = xi - burstS.x, vy = yi - burstS.y, vz = zi - burstS.z; m = Math.hypot(vx, vy, vz);                      // a click pushes them out
+        if (m < burstS.r && m > 0.01) { const w = (1 - m / burstS.r) * bt * 1.9; fx += vx / m * w; fy += vy / m * w; fz += vz / m * w; } }
+      let dx = DX[i] + fx * f, dy = DY[i] + fy * f, dz = DZ[i] + fz * f; m = Math.hypot(dx, dy, dz) || 1; dx /= m; dy /= m; dz /= m;
+      DX[i] = dx; DY[i] = dy; DZ[i] = dz;
+      const sp = SP[i] * K.speed * (1 + BOOST[i]) * f; BOOST[i] *= decay;
+      let nx = xi + dx * sp, ny = yi + dy * sp, nz = zi + dz * sp;
+      if (cube) {                                                                                                                    // bounds wrap around
+        if (nx > half) nx -= 2 * half; else if (nx < -half) nx += 2 * half;
+        if (ny > half) ny -= 2 * half; else if (ny < -half) ny += 2 * half;
+        if (nz > half) nz -= 2 * half; else if (nz < -half) nz += 2 * half;
+      }
+      X[i] = nx; Y[i] = ny; Z[i] = nz;
+    }
+  }
+  function draw() {
+    const now = performance.now();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    if (cubeFade > 0.02) {                                                // the cube's twelve edges, as a hairline
+      const a = R * 0.74, P = [];
+      for (let k = 0; k < 8; k++) { worldToCam(k & 1 ? a : -a, k & 2 ? a : -a, k & 4 ? a : -a); const s = FOCAL / (FOCAL + out[2]); P.push(CX + out[0] * s, CY + out[1] * s); }
+      ctx.strokeStyle = colA; ctx.globalAlpha = 0.55 * cubeFade; ctx.lineWidth = 0.6; ctx.beginPath();
+      for (let k = 0; k < 8; k++) for (let b = 1; b < 8; b <<= 1) if (!(k & b)) { const j = k | b; ctx.moveTo(P[2 * k], P[2 * k + 1]); ctx.lineTo(P[2 * j], P[2 * j + 1]); }
+      ctx.stroke(); ctx.globalAlpha = 1;
+    }
+    ctx.lineWidth = 1;
+    if (now - pointer.seen < 2600 && heldCap < 0) {                       // the attraction point and its neighbourhood radius
+      ctx.strokeStyle = colS; ctx.globalAlpha = 0.75; ctx.beginPath();
+      ctx.arc(pointer.x, pointer.y, K.neigh, 0, 6.2832);
+      for (let q = 0; q < 4; q++) { const a = q * 1.5708, c = Math.cos(a), s = Math.sin(a); ctx.moveTo(pointer.x + c * (K.neigh - 4), pointer.y + s * (K.neigh - 4)); ctx.lineTo(pointer.x + c * (K.neigh + 4), pointer.y + s * (K.neigh + 4)); }
+      ctx.stroke(); ctx.globalAlpha = 1;
+    }
+    const bt = (now - burstS.start) / 760;
+    if (bt >= 0 && bt < 1) {                                              // the push travels outwards as a ring
+      ctx.strokeStyle = colA; ctx.globalAlpha = (1 - bt) * 0.5; ctx.beginPath();
+      ctx.arc(burstS.sx, burstS.sy, 22 + (1 - Math.pow(1 - bt, 3)) * burstS.r * 0.8, 0, 6.2832); ctx.stroke(); ctx.globalAlpha = 1;
+    }
+    const nearZ = -R * 0.3, farZ = R * 0.3;                               // project every arrow; depth decides its tone
+    for (let i = 0; i < N; i++) {
+      worldToCam(X[i], Y[i], Z[i]);
+      const xc = out[0], yc = out[1], zc = out[2];
+      if (zc < -FOCAL * 0.6) { BUCK[i] = 9; continue; }
+      worldToCam(DX[i], DY[i], DZ[i]);
+      const l = LEN[i] * 0.5, s0 = FOCAL / (FOCAL + zc - out[2] * l), s1 = FOCAL / (FOCAL + zc + out[2] * l);
+      SX0[i] = CX + (xc - out[0] * l) * s0; SY0[i] = CY + (yc - out[1] * l) * s0;
+      SX1[i] = CX + (xc + out[0] * l) * s1; SY1[i] = CY + (yc + out[1] * l) * s1;
+      SS[i] = FOCAL / (FOCAL + zc);
+      BUCK[i] = HELD[i] ? 2 : (zc > farZ ? 0 : (zc < nearZ ? 2 : 1));
+    }
+    for (let pass = 0; pass < 3; pass++) {                                // far: pale and finer; near: full purple
+      ctx.strokeStyle = pass ? colA : colS; ctx.globalAlpha = pass === 1 ? 0.58 : 1; ctx.lineWidth = pass === 0 ? 0.7 : (pass === 1 ? 0.8 : 0.9);
+      ctx.beginPath();
+      for (let i = 0; i < N; i++) {
+        if (BUCK[i] !== pass) continue;
+        const x0 = SX0[i], y0 = SY0[i], x1 = SX1[i], y1 = SY1[i];
+        let ux = x1 - x0, uy = y1 - y0; const m = Math.hypot(ux, uy);
+        ctx.moveTo(x0, y0); ctx.lineTo(x1, y1);
+        if (m < 1.3) continue;                                            // seen end-on: a dot
+        ux /= m; uy /= m; const hs = HEAD * SS[i];
+        ctx.moveTo(x1 - (ux * CA - uy * SA) * hs, y1 - (uy * CA + ux * SA) * hs); ctx.lineTo(x1, y1);
+        ctx.lineTo(x1 - (ux * CA + uy * SA) * hs, y1 - (uy * CA - ux * SA) * hs);
+      }
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+  function hud(now) {
+    if (!hudA) return;
+    const pad = (v, n) => String(Math.max(0, Math.round(v))).padStart(n, '0');
+    const live = now - pointer.seen < 2600, P = shape === 'cube' ? CUBE : BALL;
+    const state = now - burstS.start < 760 ? 'Repel' : (live ? 'Cursor' : 'Drift');
+    hudA.textContent = 'Flock  n ' + N + '   align ' + P.ali.toFixed(3) + '   cohere ' + P.coh.toFixed(3) + '   separate ' + K.sep.toFixed(3);
+    hudB.textContent = 'Attractor  ' + state + (live ? '   x ' + pad(pointer.x, 4) + '   y ' + pad(pointer.y, 4) : '');
+  }
+  function frame(now) {
+    raf = 0; if (!on) return;
+    const f = Math.min(2.5, (now - last) / 16.667) || 1; last = now;
+    readLenses(); step(f, now); draw();
+    if (++tick % 6 === 0) hud(now);
+    raf = requestAnimationFrame(frame);
+  }
+  function start() { if (reduced || on) return; on = true; last = performance.now(); raf = requestAnimationFrame(frame); }
+  function stop() { on = false; if (raf) cancelAnimationFrame(raf); raf = 0; }
+  function release(kick) {
+    heldCap = -1;
+    for (let i = 0; i < N; i++) if (HELD[i]) { HELD[i] = 0; BOOST[i] = kick || 0.5; }
+  }
+  /* the arrows nearest on screen swarm into menu frame k */
+  function hold(k) {
+    if (reduced || !on || k === heldCap) return;
+    release(0.2); readLenses();
+    const L = lenses[k]; if (!L) return;
+    const count = Math.max(10, Math.min(60, Math.round(L.w * L.h / 420), Math.round(N * 0.2))), idx = [];
+    const far = i => { const x = (SX0[i] + SX1[i]) / 2 - L.cx, y = (SY0[i] + SY1[i]) / 2 - L.cy; return x * x + y * y; };
+    for (let i = 0; i < N; i++) if (BUCK[i] !== 9) idx.push(i);
+    idx.sort((a, b) => far(a) - far(b));
+    const spin = Math.random() < 0.5 ? -1 : 1;
+    for (let q = 0; q < count && q < idx.length; q++) {
+      const i = idx[q]; HELD[i] = 1;
+      PA[i] = Math.atan2((SY0[i] + SY1[i]) / 2 - L.cy, (SX0[i] + SX1[i]) / 2 - L.cx); PR[i] = 0.3 + 0.68 * Math.sqrt(Math.random());
+      PW[i] = spin * (0.012 + Math.random() * 0.014); PZ[i] = (Math.random() - 0.5) * 30;
+    }
+    heldCap = k;
+  }
+  function burst(x, y, scale) {
+    if (reduced) return;
+    release(0);
+    camToWorld(x - CX, y - CY, 0);
+    burstS.x = out[0]; burstS.y = out[1]; burstS.z = out[2]; burstS.sx = x; burstS.sy = y;
+    const r = burstS.r = R * 1.5 * (scale || 1);
+    burstS.start = performance.now(); pointer.seen = -1e9;
+    for (let i = 0; i < N; i++) {
+      const vx = X[i] - burstS.x, vy = Y[i] - burstS.y, vz = Z[i] - burstS.z, m = Math.hypot(vx, vy, vz);
+      if (m < r) { const w = Math.pow(1 - m / r, 1.25); BOOST[i] = Math.max(BOOST[i], 5.2 * w * (scale || 1)); if (m > 0.01 && w > 0.25) { DX[i] = vx / m; DY[i] = vy / m; DZ[i] = vz / m; } }
+    }
+  }
+  function point(x, y) { pointer.x = x; pointer.y = y; pointer.seen = performance.now(); }
+  function setShape(s) {
+    shape = s === 'cube' ? 'cube' : 'sphere';
+    try { localStorage.setItem('flockBounds', shape); } catch (e) {}
+    if (!on) { cubeFade = shape === 'cube' ? 1 : 0; for (let k = 0; k < 160; k++) step(1, performance.now() + k * 16); draw(); }
+    hud(performance.now());
+    return shape;
+  }
+  window.addEventListener('resize', resize);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); else if (app.dataset.view === 'home') start(); });
+  resize();
+  return { start, stop, hold, release, burst, point, setShape, shape: () => shape, away() { pointer.seen = -1e9; } };
+})();
+
+/* ============================================================== cover == */
+const home = $('#home'), contact = $('#contact');
+let toastT = 0;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 1700); }
+function setView(v) {
+  app.dataset.view = v;
+  if (v === 'home') Flock.start(); else setTimeout(() => { if (app.dataset.view !== 'home') Flock.stop(); }, 750);
+  try { const want = v === 'book' ? '#book' : ''; if ((location.hash || '') !== want) location.hash = want; } catch (e) {}
+}
+function openContact(open) {
+  const cap = contact.closest('.cap'), inner = contact.firstElementChild;
+  if (open) {                                           // the frame widens to its contents as it grows into a card
+    inner.style.width = 'max-content'; inner.style.minWidth = '0';
+    const w = inner.offsetWidth; inner.style.width = ''; inner.style.minWidth = '';
+    cap.style.minWidth = Math.min(w + 3, home.clientWidth) + 'px';
+  } else cap.style.minWidth = '';
+  contact.classList.toggle('open', open);
+  $('.act[data-act="contact"]').setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+home.addEventListener('pointermove', e => { if (e.pointerType === 'mouse') Flock.point(e.clientX, e.clientY); });
+home.addEventListener('pointerleave', () => Flock.away());
+home.addEventListener('pointerdown', e => { if (!e.target.closest('button,a,.sel,.cap')) Flock.burst(e.clientX, e.clientY, 0.6); });
+caps.forEach((cap, k) => {
+  const btn = $('.act', cap);
+  cap.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') Flock.hold(k); });
+  cap.addEventListener('pointerleave', () => Flock.release(0.5));
+  btn.addEventListener('pointerdown', () => Flock.hold(k));
+  btn.addEventListener('focus', () => { if (btn.matches(':focus-visible')) Flock.hold(k); });
+  btn.addEventListener('blur', () => Flock.release(0.5));
+  btn.addEventListener('click', async () => {
+    const r = cap.getBoundingClientRect(); Flock.burst(r.left + r.width / 2, r.top + r.height / 2);
+    const kind = btn.dataset.act;
+    if (kind === 'book') { await wait(reduced ? 0 : 520); enterBook(); }
+    else if (kind === 'contact') { await wait(reduced ? 0 : 160); openContact(!contact.classList.contains('open')); }
+    else { await wait(reduced ? 0 : 420); saveResume(); }
+  });
+});
+const boundsBtn = $('#bounds');
+const syncBounds = () => { boundsBtn.textContent = 'Bounds: ' + Flock.shape(); };
+boundsBtn.addEventListener('click', () => { Flock.setShape(Flock.shape() === 'cube' ? 'sphere' : 'cube'); syncBounds(); });
+syncBounds();
+$('#copyMail').addEventListener('click', () => {
+  const el = $('#mail'), done = () => toast('Email copied');
+  const select = () => { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast('Email selected'); };
+  try { navigator.clipboard.writeText(el.textContent).then(done, select); } catch (e) { select(); }
+});
+
+/* ============================================================== resume == */
+const hasHost = !!(window.claude && typeof window.claude.use === 'function');
+let saver = null;
+if (hasHost) { try { window.claude.use('downloads').then(ns => { saver = ns || null; syncDownload(); }, () => {}); } catch (e) {} }
+function syncDownload() { $('#dlResume').hidden = !(saver || !hasHost); }
+async function saveResume() {
+  if (saver) {
+    try {
+      const blob = await (await fetch(RESUME_PDF)).blob();
+      await saver.save({ filename: RESUME_NAME, data: blob });
+      toast('Resume saved');
+    } catch (e) { if (!e || e.code !== 'declined') openOver('resume'); }
+  } else if (!hasHost) {
+    const a = document.createElement('a'); a.href = RESUME_PDF; a.download = RESUME_NAME; document.body.appendChild(a); a.click(); a.remove();
+  } else openOver('resume');
+}
+function buildResume() {
+  const body = $('#resumeBody'); if (body.childElementCount) return;
+  for (let k = 1; k <= BOOK.resumePages; k++) {
+    const im = new Image(); im.alt = 'Resume, page ' + k; im.width = 1700; im.height = 2405; im.src = 'resume/resume-' + k + '.webp'; body.appendChild(im);
+  }
+}
+$('#dlResume').addEventListener('click', saveResume);
+syncDownload();
+
+/* ============================================================== overlays == */
+function openOver(id) {
+  if (id === 'resume') buildResume();
+  if (id === 'index') buildIndex();
+  document.querySelectorAll('.over').forEach(o => { if (o.id !== id && o.id !== 'zoom') o.hidden = true; });
+  const el = $('#' + id); el.hidden = false; el.scrollTop = 0;
+  const c = $('[data-close]', el); if (c) c.focus({ preventScroll: true });
+}
+function closeOvers() { document.querySelectorAll('.over').forEach(o => { o.hidden = true; }); }
+document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeOvers));
+
+/* ============================================================== book == */
+const LAST = BOOK.sheets - 1, RATIO = 840 / 297;
+const stage = $('#stage'), sheet = $('#sheet'), rest = $('#rest'), flip = $('#flip'), leaf = $('#leaf'), scroller = $('#scroller'), foot = $('#foot');
+const cv = { ul: $('#cUL'), ur: $('#cUR'), f: $('#cF'), b: $('#cB') };
+const tints = { ul: $('#tUL'), ur: $('#tUR'), f: $('#tF'), b: $('#tB') };
+let cur = 0, painted = false, busy = false, pending = null, heading = null, mode = '', sheetW = 0, sheetH = 0, upT = 0, booted = false, swiped = 0;
+const aim = () => (pending !== null ? pending : (heading !== null ? heading : cur));   // where the reader is heading, turns in progress included
+const isSingle = i => i === 0 || i === LAST;
+const url = (i, tier) => 'pages/' + tier + String(i + 1).padStart(2, '0') + '.webp';
+const imgs = new Map();
+function img(i, tier) {
+  tier = tier || 's';
+  const key = tier + i; let p = imgs.get(key);
+  if (!p) {
+    p = new Promise((res, rej) => {
+      const im = new Image(); im.decoding = 'async';
+      im.onload = () => { (im.decode ? im.decode().catch(() => {}) : Promise.resolve()).then(() => res(im)); };
+      im.onerror = () => { imgs.delete(key); rej(new Error('Could not load ' + url(i, tier))); };
+      im.src = url(i, tier);
+    });
+    imgs.set(key, p);
+  }
+  return p;
+}
+function trim() { for (const key of Array.from(imgs.keys())) { const i = +key.slice(1); if (Math.abs(i - cur) > (key[0] === 'z' ? 0 : 3)) imgs.delete(key); } }
+function fit(c, w, h) {
+  const d = Math.min(window.devicePixelRatio || 1, 2), pw = Math.max(1, Math.round(w * d)), ph = Math.max(1, Math.round(h * d));
+  if (c.width !== pw || c.height !== ph) { c.width = pw; c.height = ph; }
+  const g = c.getContext('2d'); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.clearRect(0, 0, pw, ph); return g;
+}
+function paintHalf(c, im, i, side) {
+  const g = fit(c, sheetW / 2, sheetH);
+  if (isSingle(i)) g.drawImage(im, 0, 0, im.naturalWidth, im.naturalHeight, 0, 0, c.width, c.height);
+  else { const sw = im.naturalWidth / 2; g.drawImage(im, side === 'L' ? 0 : sw, 0, sw, im.naturalHeight, 0, 0, c.width, c.height); }
+}
+function paintRest(im, i) {
+  rest.className = 'rest' + (i === 0 ? ' is-r' : (i === LAST ? ' is-l' : ''));
+  const g = fit(rest, isSingle(i) ? sheetW / 2 : sheetW, sheetH);
+  g.drawImage(im, 0, 0, im.naturalWidth, im.naturalHeight, 0, 0, rest.width, rest.height);
+}
+function frameFor(i, ms) {
+  sheet.style.setProperty('--turn', ms + 'ms');
+  sheet.style.setProperty('--shift', i === 0 ? '-25%' : (i === LAST ? '25%' : '0%'));
+  sheet.style.setProperty('--pl', i === 0 ? '50%' : '0%');
+  sheet.style.setProperty('--pr', i === LAST ? '50%' : '0%');
+}
+/* a rigid leaf turns about the spine: its front is the right page of the earlier spread, its back the left page of
+   the later one. Each page is one flat picture and the shading is one even tone, so nothing draws lines across it. */
+async function turn(to, fast) {
+  const lo = Math.min(cur, to), hi = Math.max(cur, to), fwd = to > cur, dur = fast ? 400 : 820;
+  const pair = await Promise.all([img(lo), img(hi)]), A = pair[0], B = pair[1];
+  $('#hL').style.visibility = lo === 0 ? 'hidden' : ''; $('#hR').style.visibility = hi === LAST ? 'hidden' : '';
+  if (lo !== 0) paintHalf(cv.ul, A, lo, 'L');
+  if (hi !== LAST) paintHalf(cv.ur, B, hi, 'R');
+  paintHalf(cv.f, A, lo, 'R'); paintHalf(cv.b, B, hi, 'L');
+  leaf.style.transform = fwd ? 'rotateY(0deg)' : 'rotateY(-180deg)';
+  flip.hidden = false; rest.style.visibility = 'hidden';
+  frameFor(to, dur);
+  const o = { duration: dur, easing: 'cubic-bezier(.42,.08,.2,1)', fill: 'both', direction: fwd ? 'normal' : 'reverse' };
+  const anims = [
+    leaf.animate([{ transform: 'rotateY(0deg)' }, { transform: 'rotateY(-180deg)' }], o),
+    tints.f.animate([{ opacity: 0 }, { opacity: 0.1, offset: 0.5 }, { opacity: 0.1 }], o),
+    tints.b.animate([{ opacity: 0.1 }, { opacity: 0.1, offset: 0.5 }, { opacity: 0 }], o),
+    tints.ur.animate([{ opacity: 0.04 }, { opacity: 0 }], o),
+    tints.ul.animate([{ opacity: 0 }, { opacity: 0.035 }], o)
+  ];
+  await anims[0].finished;
+  cur = to; paintRest(fwd ? B : A, to);
+  rest.style.visibility = ''; flip.hidden = true; anims.forEach(a => a.cancel());
+}
+async function swap(to, instant) {
+  const im = await img(to);
+  if (!instant && painted) await rest.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, easing: 'ease-out' }).finished;
+  frameFor(to, instant ? 0 : 380); cur = to; paintRest(im, to); painted = true;
+  if (!instant) rest.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, easing: 'ease-out' });
+}
+async function go(to, o) {
+  o = o || {};
+  to = Math.max(0, Math.min(LAST, to | 0));
+  if (mode === 'pages') { scrollToSheet(to, o.instant); return; }
+  if (busy) { pending = to; return; }
+  if (to === cur && painted && !o.force) return;
+  busy = true; heading = to; foot.classList.add('loading');
+  try {
+    if (painted && Math.abs(to - cur) === 1 && !reduced && !o.instant) await turn(to, !!o.fast);
+    else await swap(to, !painted || !!o.instant || reduced);
+  } catch (e) { flip.hidden = true; rest.style.visibility = ''; toast('That page did not load. Try again.'); }
+  busy = false; heading = null; foot.classList.remove('loading'); settle();
+  if (pending !== null) { const p = pending; pending = null; if (p !== cur) go(p, { fast: true }); }
+}
+/* printed page numbers: sheet k holds 2k-2 and 2k-1; the cover and the inside cover carry none */
+const sections = [{ title: 'About', page: 1 }, { title: 'Contents', page: 2 }];
+BOOK.chapters.forEach(c => { if (c.page != null) sections.push({ title: c.title, page: c.page }); c.projects.forEach(p => sections.push({ title: p.title, page: p.page })); });
+sections.sort((a, b) => a.page - b.page);
+const sheetOf = page => Math.max(0, Math.min(LAST, Math.floor((page + 2) / 2)));
+function labelFor(i, page) {
+  if (i === 0) return 'Cover';
+  const ref = page != null ? page : (i === LAST ? 2 * i - 2 : 2 * i - 1);
+  let t = ''; for (const s of sections) { if (s.page <= ref) t = s.title; }
+  return t || 'Portfolio';
+}
+function settle() {
+  const l = 2 * cur - 2, r = 2 * cur - 1;
+  $('#num').textContent = cur === 0 ? 'Cover' : (cur === LAST ? String(l) : (l >= 1 ? l + ' – ' + r : String(r)));
+  $('#where').textContent = labelFor(cur);
+  $('#prog').style.width = (cur / LAST * 100) + '%';
+  $('#prev').disabled = cur === 0; $('#next').disabled = cur === LAST;
+  trim();
+  [cur + 1, cur - 1, cur + 2].forEach(i => { if (i >= 0 && i <= LAST) img(i).catch(() => {}); });
+  clearTimeout(upT);
+  if (mode === 'spreads' && sheetW * Math.min(window.devicePixelRatio || 1, 2) > 3000) {
+    const i = cur; upT = setTimeout(() => { img(i, 'z').then(im => { if (i === cur && !busy && mode === 'spreads') paintRest(im, i); }, () => {}); }, 450);
+  }
+}
+/* ---- one page per row for narrow, upright screens */
+let pagesBuilt = false, io = null, scrollT = 0;
+function buildPages() {
+  if (pagesBuilt) return; pagesBuilt = true;
+  io = new IntersectionObserver(es => es.forEach(e => {
+    const d = e.target, s = +d.dataset.s;
+    if (e.isIntersecting) { d.style.backgroundImage = 'url("' + url(s, 's') + '")'; d.style.backgroundSize = isSingle(s) ? '100% 100%' : '200% 100%'; d.style.backgroundPosition = d.dataset.side === 'L' ? 'left top' : 'right top'; }
+    else d.style.backgroundImage = '';
+  }), { root: scroller, rootMargin: '160% 0px' });
+  const frag = document.createDocumentFragment();
+  for (let a = 1; a <= BOOK.pages; a++) {
+    const d = document.createElement('button');
+    d.className = 'pg'; d.dataset.s = a === 1 ? 0 : Math.floor(a / 2); d.dataset.side = a % 2 === 0 ? 'L' : 'R'; d.dataset.abs = a;
+    d.setAttribute('aria-label', (a > 2 ? 'Page ' + (a - 2) : 'Cover page') + '. Tap to zoom.');
+    frag.appendChild(d);
+  }
+  scroller.appendChild(frag);
+  scroller.querySelectorAll('.pg').forEach(d => io.observe(d));
+  scroller.addEventListener('click', e => {
+    const d = e.target.closest('.pg'); if (!d) return;
+    const b = d.getBoundingClientRect(), s = +d.dataset.s, lx = (e.clientX - b.left) / b.width, ly = (e.clientY - b.top) / b.height;
+    openZoom(s, isSingle(s) ? (s === 0 ? 0.5 + lx / 2 : lx / 2) : (d.dataset.side === 'L' ? lx / 2 : 0.5 + lx / 2), ly);
+  });
+  scroller.addEventListener('scroll', () => { if (!scrollT) scrollT = requestAnimationFrame(trackScroll); }, { passive: true });
+}
+function trackScroll() {
+  scrollT = 0; if (mode !== 'pages') return;
+  const mid = scroller.scrollTop + scroller.clientHeight / 2; let best = null, bd = 1e9;
+  for (const d of scroller.children) { const c = d.offsetTop + d.offsetHeight / 2, dist = Math.abs(c - mid); if (dist < bd) { bd = dist; best = d; } }
+  if (!best) return;
+  const a = +best.dataset.abs; cur = +best.dataset.s;
+  $('#num').textContent = a <= 2 ? (a === 1 ? 'Cover' : '–') : String(a - 2);
+  $('#where').textContent = a === 1 ? 'Cover' : labelFor(cur, a - 2);
+  $('#prog').style.width = ((a - 1) / (BOOK.pages - 1) * 100) + '%';
+}
+function scrollToSheet(i, instant, page) {
+  const abs = page != null ? page + 2 : (i === 0 ? 1 : 2 * i), d = scroller.children[Math.max(0, Math.min(BOOK.pages, abs) - 1)];
+  if (d) scroller.scrollTo({ top: d.offsetTop - 6, behavior: instant || reduced ? 'auto' : 'smooth' });
+  cur = i; trackScroll();
+}
+function layout() {
+  const want = (window.innerWidth < 720 || (window.innerWidth < 1000 && window.innerHeight > window.innerWidth)) ? 'pages' : 'spreads';
+  const changed = want !== mode; mode = want;
+  const pages = mode === 'pages';
+  sheet.hidden = pages; $('#prev').hidden = pages; $('#next').hidden = pages; scroller.hidden = !pages;
+  $('#hint').textContent = (matchMedia('(pointer:coarse)').matches ? 'Tap' : 'Click') + ' a page to zoom';
+  if (pages) { buildPages(); if (changed) scrollToSheet(cur, true); return; }
+  const b = stage.getBoundingClientRect(), availW = b.width - 12, availH = b.height - 16;
+  const w = Math.max(120, Math.floor(Math.min(availW, availH * RATIO))), h = Math.round(w / RATIO);
+  if (w === sheetW && h === sheetH && !changed) return;
+  sheetW = w; sheetH = h; sheet.style.setProperty('--sw', w + 'px'); sheet.style.setProperty('--sh', h + 'px');
+  if (booted && !busy) { painted = false; go(cur, { instant: true, force: true }); }
+}
+function enterBook(page) {
+  closeOvers(); setView('book');
+  layout();
+  const target = page != null ? sheetOf(page) : cur;
+  if (mode === 'pages') { booted = true; if (page != null) scrollToSheet(target, true, page); else trackScroll(); return; }
+  if (!booted) { booted = true; go(target, { instant: true, force: true }); }
+  else if (!painted) go(target, { instant: true, force: true });
+  else if (page != null) go(target);
+}
+function buildIndex() {
+  const body = $('#indexBody'); if (body.childElementCount) return;
+  BOOK.chapters.forEach(c => {
+    const sec = document.createElement('section'); sec.className = 'chap';
+    const h = document.createElement('h2'); h.textContent = c.title;
+    const ol = document.createElement('ol');
+    c.projects.forEach(p => {
+      const li = document.createElement('li'), b = document.createElement('button'), t = document.createElement('span'), n = document.createElement('b');
+      t.textContent = p.title; n.textContent = p.page; b.appendChild(t); b.appendChild(n);
+      b.addEventListener('click', () => { closeOvers(); enterBook(p.page); });
+      li.appendChild(b); ol.appendChild(li);
+    });
+    sec.appendChild(h); sec.appendChild(ol); body.appendChild(sec);
+  });
+}
+$('#prev').addEventListener('click', () => go(aim() - 1));
+$('#next').addEventListener('click', () => go(aim() + 1));
+$('#toHome').addEventListener('click', () => setView('home'));
+$('#openIndex').addEventListener('click', () => openOver('index'));
+$('#openResume').addEventListener('click', () => openOver('resume'));
+$('#openContact').addEventListener('click', () => { setView('home'); openContact(true); });
+rest.addEventListener('click', e => {
+  if (busy || performance.now() - swiped < 400) return;
+  const b = sheet.getBoundingClientRect();
+  openZoom(cur, (e.clientX - b.left) / b.width, (e.clientY - b.top) / b.height);
+});
+(function swipe() {
+  let sx = 0, sy = 0, id = null;
+  stage.addEventListener('pointerdown', e => { if (e.pointerType === 'mouse' || mode !== 'spreads') return; id = e.pointerId; sx = e.clientX; sy = e.clientY; });
+  stage.addEventListener('pointerup', e => {
+    if (e.pointerId !== id) return; id = null;
+    const dx = e.clientX - sx, dy = e.clientY - sy;
+    if (Math.abs(dx) > 46 && Math.abs(dx) > Math.abs(dy) * 1.4) { swiped = performance.now(); go(cur + (dx < 0 ? 1 : -1)); }
+  });
+  stage.addEventListener('pointercancel', () => { id = null; });
+})();
+new ResizeObserver(() => { if (app.dataset.view === 'book') layout(); }).observe(stage);
+
+/* ---- zoom: the spread at reading size, panned by scrolling or dragging. fx, fy are fractions of the whole sheet. */
+const zoom = $('#zoom'), zimg = $('#zoomImg');
+let zToken = 0, dragged = false;
+function openZoom(i, fx, fy) {
+  const single = isSingle(i), vw = window.innerWidth, vh = window.innerHeight, token = ++zToken;
+  let zw = mode === 'pages' ? vw * (single ? 2.6 : 5.2) : Math.max(sheetW * 2.3, vw * 1.5) * (single ? 0.5 : 1);
+  zw = Math.round(Math.min(zw, (single ? 2800 : 5600) * 1.1));
+  const zh = zw / (single ? RATIO / 2 : RATIO);
+  if (single) fx = i === 0 ? (fx - 0.5) * 2 : fx * 2;
+  zimg.style.setProperty('--zw', zw + 'px'); zimg.style.aspectRatio = String(single ? RATIO / 2 : RATIO);
+  zimg.src = url(i, 's');
+  zoom.hidden = false;
+  zoom.scrollLeft = Math.max(0, fx * zw - vw / 2); zoom.scrollTop = Math.max(0, fy * zh - vh / 2);
+  img(i, 'z').then(im => { if (token === zToken && !zoom.hidden) zimg.src = im.src; }, () => {});
+}
+function closeZoom() { zoom.hidden = true; zToken++; zimg.removeAttribute('src'); }
+(function pan() {
+  let on = false, lx = 0, ly = 0, moved = 0;
+  zoom.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse' || e.button !== 0) return; on = true; moved = 0; dragged = false; lx = e.clientX; ly = e.clientY; });
+  window.addEventListener('pointermove', e => {
+    if (!on) return;
+    const dx = e.clientX - lx, dy = e.clientY - ly; lx = e.clientX; ly = e.clientY; moved += Math.abs(dx) + Math.abs(dy);
+    if (moved > 4) { dragged = true; zoom.classList.add('drag'); zoom.scrollLeft -= dx; zoom.scrollTop -= dy; }
+  });
+  window.addEventListener('pointerup', () => { on = false; zoom.classList.remove('drag'); });
+  zoom.addEventListener('click', () => { if (dragged) { dragged = false; return; } closeZoom(); });
+})();
+
+/* ============================================================== keys and deep links == */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { if (!zoom.hidden) closeZoom(); else closeOvers(); return; }
+  if (app.dataset.view !== 'book' || !zoom.hidden || document.querySelector('.over:not([hidden])') || mode !== 'spreads') return;
+  const base = aim();
+  if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); go(base + 1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(base - 1); }
+  else if (e.key === 'Home') go(0);
+  else if (e.key === 'End') go(LAST);
+});
+function route() {
+  const h = (location.hash || '').replace('#', '');
+  const m = /^p(\d{1,3})$/.exec(h);
+  if (m) enterBook(+m[1]);
+  else if (h === 'book') { if (app.dataset.view !== 'book') enterBook(); }
+  else if (h === 'contact') { setView('home'); openContact(true); }
+  else if (app.dataset.view !== 'home') setView('home');
+}
+window.addEventListener('hashchange', route);
+if (location.hash && location.hash.length > 1) route();
+if (app.dataset.view === 'home') Flock.start();
+img(0).catch(() => {}); img(1).catch(() => {});
+})();
+</script>
+
+</body></html>
