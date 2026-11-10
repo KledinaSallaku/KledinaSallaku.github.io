@@ -76,7 +76,8 @@ button.lab:hover{color:var(--ink)}
 .sheet{position:relative;width:var(--sw,10px);height:var(--sh,10px);transform:translateX(var(--shift,0%));transition:transform var(--turn,820ms) var(--ease)}
 .paper{position:absolute;top:0;bottom:0;left:var(--pl,0%);right:var(--pr,0%);background:var(--paper);
   box-shadow:0 0 0 1px var(--hair), 0 26px 60px -34px var(--page-shade);transition:left var(--turn,820ms) var(--ease), right var(--turn,820ms) var(--ease)}
-.rest{position:absolute;top:0;left:0;width:100%;height:100%;cursor:zoom-in;display:block}
+.rest{position:absolute;top:0;left:0;width:100%;height:100%;cursor:zoom-in;display:block;touch-action:pan-y pinch-zoom}
+.curl{position:absolute;z-index:2;display:block;pointer-events:none;transition:opacity .18s ease}   /* the turning page; larger than the sheet, as the page lifts off it */
 .rest.is-r{left:50%;width:50%}
 .rest.is-l{width:50%}
 .flip{position:absolute;inset:0;perspective:2800px;perspective-origin:50% 50%;pointer-events:none}
@@ -180,7 +181,8 @@ button.lab:hover{color:var(--ink)}
     <div class="stage" id="stage">
       <div class="sheet" id="sheet">
         <div class="paper"></div>
-        <canvas class="rest" id="rest" role="img" aria-label="Portfolio pages. Click to zoom."></canvas>
+        <canvas class="rest" id="rest" role="img" aria-label="Portfolio pages. Click to zoom, drag to turn."></canvas>
+        <canvas class="curl" id="curl" hidden aria-hidden="true"></canvas>
         <div class="flip" id="flip" hidden>
           <div class="h l" id="hL"><canvas id="cUL"></canvas><i class="tint" id="tUL"></i></div>
           <div class="h r" id="hR"><canvas id="cUR"></canvas><i class="tint" id="tUR"></i></div>
@@ -591,14 +593,14 @@ let cur = 0, painted = false, busy = false, pending = null, heading = null, mode
 const aim = () => (pending !== null ? pending : (heading !== null ? heading : cur));   // where the reader is heading, turns in progress included
 const isSingle = i => i === 0 || i === LAST;
 const url = (i, tier) => 'pages/' + tier + String(i + 1).padStart(2, '0') + '.webp';
-const imgs = new Map();
+const imgs = new Map(), ready = new Map();          // ready: pictures already decoded, for turns that cannot wait
 function img(i, tier) {
   tier = tier || 's';
   const key = tier + i; let p = imgs.get(key);
   if (!p) {
     p = new Promise((res, rej) => {
       const im = new Image(); im.decoding = 'async';
-      im.onload = () => { (im.decode ? im.decode().catch(() => {}) : Promise.resolve()).then(() => res(im)); };
+      im.onload = () => { (im.decode ? im.decode().catch(() => {}) : Promise.resolve()).then(() => { if (imgs.has(key)) ready.set(key, im); res(im); }); };
       im.onerror = () => { imgs.delete(key); rej(new Error('Could not load ' + url(i, tier))); };
       im.src = url(i, tier);
     });
@@ -606,7 +608,7 @@ function img(i, tier) {
   }
   return p;
 }
-function trim() { for (const key of Array.from(imgs.keys())) { const i = +key.slice(1); if (Math.abs(i - cur) > (key[0] === 'z' ? 0 : 3)) imgs.delete(key); } }
+function trim() { for (const key of Array.from(imgs.keys())) { const i = +key.slice(1); if (Math.abs(i - cur) > (key[0] === 'z' ? 0 : 3)) { imgs.delete(key); ready.delete(key); } } }
 function fit(c, w, h) {
   const d = Math.min(window.devicePixelRatio || 1, 2), pw = Math.max(1, Math.round(w * d)), ph = Math.max(1, Math.round(h * d));
   if (c.width !== pw || c.height !== ph) { c.width = pw; c.height = ph; }
@@ -628,9 +630,9 @@ function frameFor(i, ms) {
   sheet.style.setProperty('--pl', i === 0 ? '50%' : '0%');
   sheet.style.setProperty('--pr', i === LAST ? '50%' : '0%');
 }
-/* a rigid leaf turns about the spine: its front is the right page of the earlier spread, its back the left page of
-   the later one. Each page is one flat picture and the shading is one even tone, so nothing draws lines across it. */
-async function turn(to, fast) {
+/* fallback where WebGL is missing: a rigid leaf turns about the spine, its front the right page of the earlier spread,
+   its back the left page of the later one */
+async function turnFlat(to, fast) {
   const lo = Math.min(cur, to), hi = Math.max(cur, to), fwd = to > cur, dur = fast ? 400 : 820;
   const pair = await Promise.all([img(lo), img(hi)]), A = pair[0], B = pair[1];
   $('#hL').style.visibility = lo === 0 ? 'hidden' : ''; $('#hR').style.visibility = hi === LAST ? 'hidden' : '';
@@ -651,6 +653,176 @@ async function turn(to, fast) {
   await anims[0].finished;
   cur = to; paintRest(fwd ? B : A, to);
   rest.style.visibility = ''; flip.hidden = true; anims.forEach(a => a.cancel());
+}
+/* ---- the page turn proper: a curl. The turning leaf is one continuous surface, a mesh rolled over a cylinder that
+   travels from the page's outer corner to the spine, drawn with WebGL and lit per pixel. It is never cut into strips,
+   so nothing draws seams or lines across the page. t = 0: the leaf lies on the right; t = 1: it lies on the left.
+   Units: one page width; x from the spine, y down. */
+const Curl = (function () {
+  const cvs = $('#curl'), M = 0.16, AR = 297 / 420, NX = 96, NY = 36, AL0 = 0.3, R0 = 0.085, C0 = Math.cos(AL0) + AR * Math.sin(AL0);   // a tight roll: the page folds over, as in an online magazine reader
+  let gl = null, ok = false, leafP = null, pageP = null, nIdx = 0, vaoLeaf = null, vaoQuad = null, now = null;
+  const tex = new Map();
+  const HEAD = '#version 300 es\nprecision highp float;\nconst float PI = 3.14159265, A = ' + AR.toFixed(6) + ', M = ' + M.toFixed(3) + ', CAM = 3.4;\n' +
+    'float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }\n';
+  const VS_LEAF = HEAD + `in vec2 a_pos;
+uniform float u_c, u_r, u_al;
+out vec2 v_uv; out vec3 v_n;
+void main() {
+  vec2 n = vec2(cos(u_al), sin(u_al)), p = vec2(a_pos.x, a_pos.y * A);
+  float d = dot(p, n) - u_c;                            // how far this point lies beyond the fold line
+  vec3 P = vec3(p, 0.0), N = vec3(0.0, 0.0, 1.0);
+  if (d > 0.0) {
+    float th = d / u_r;
+    if (th < PI) { P.xy += n * (u_r * sin(th) - d); P.z = u_r * (1.0 - cos(th)); N = vec3(-sin(th) * n, cos(th)); }   // on the cylinder
+    else { P.xy += n * (PI * u_r - 2.0 * d); P.z = 2.0 * u_r; N = vec3(0.0, 0.0, -1.0); }                              // over the top, lying back
+  }
+  v_uv = a_pos; v_n = N;
+  float k = CAM / (CAM - P.z);                          // seen from above the spine: what lifts comes closer
+  gl_Position = vec4(P.x * k / (1.0 + M), -(P.y - A * 0.5) * k / (A * 0.5 + M), -P.z * 0.4 - 0.002, 1.0);
+}`;
+  const FS_LEAF = HEAD + `uniform sampler2D u_front, u_back; uniform vec2 u_fuv, u_buv; uniform float u_settle;
+in vec2 v_uv; in vec3 v_n; out vec4 o;
+const vec3 L = vec3(-0.30, -0.34, 0.89);
+void main() {
+  vec3 N = normalize(v_n), col; float lam;
+  if (gl_FrontFacing) { col = texture(u_front, vec2(u_fuv.x + v_uv.x * u_fuv.y, v_uv.y), -0.6).rgb; lam = dot(N, L) / L.z; }
+  else { col = texture(u_back, vec2(u_buv.x + (1.0 - v_uv.x) * u_buv.y, v_uv.y), -0.6).rgb * mix(0.975, 1.0, u_settle); lam = dot(-N, L) / L.z; }
+  float shade = clamp(1.0 + 0.36 * (lam - 1.0), 0.72, 1.03);
+  o = vec4(col * shade + (hash(gl_FragCoord.xy) - 0.5) / 255.0, 1.0);
+}`;
+  const VS_PAGE = HEAD + `in vec2 a_pos;
+out vec2 v_p;
+void main() { v_p = vec2(a_pos.x, a_pos.y * A); gl_Position = vec4(v_p.x / (1.0 + M), -(v_p.y - A * 0.5) / (A * 0.5 + M), 0.0, 1.0); }`;
+  const FS_PAGE = HEAD + `uniform sampler2D u_tex; uniform vec2 u_uv; uniform float u_side, u_c, u_r, u_al, u_env;
+in vec2 v_p; out vec4 o;
+void main() {
+  float x = u_side > 0.0 ? v_p.x : v_p.x + 1.0;
+  vec3 col = texture(u_tex, vec2(u_uv.x + x * u_uv.y, v_p.y / A), -0.6).rgb;
+  vec2 n = vec2(cos(u_al), sin(u_al)), ta = vec2(-sin(u_al), cos(u_al));
+  float un = dot(v_p, n), d = un - u_c, sh = 0.0;
+  if (u_side > 0.0) { if (d > 0.0) sh = 0.24 * (1.0 - smoothstep(0.0, 1.6 * u_r + 0.1, d)); }       // under the rising fold: darkest where it leaves the page
+  else {                                                                                            // beyond the edge of the part that has come down
+    float over = (1.0 + dot(v_p, ta) * sin(u_al)) / cos(u_al) - u_c - PI * u_r;
+    if (over > 0.0) { float gap = (u_c - over) - un; if (gap > 0.0) sh = 0.2 * (1.0 - smoothstep(0.0, 2.0 * u_r + 0.08, gap)); }
+  }
+  o = vec4(col * (1.0 - sh * u_env) + (hash(gl_FragCoord.xy) - 0.5) / 255.0, 1.0);
+}`;
+  function shader(type, src) {
+    const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) || 'shader');
+    return s;
+  }
+  function program(vs, fs, names) {
+    const p = gl.createProgram(); gl.attachShader(p, shader(gl.VERTEX_SHADER, vs)); gl.attachShader(p, shader(gl.FRAGMENT_SHADER, fs));
+    gl.bindAttribLocation(p, 0, 'a_pos'); gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p) || 'link');
+    const u = {}; names.forEach(k => { u[k] = gl.getUniformLocation(p, k); }); return { p, u };
+  }
+  function init() {
+    ok = false; tex.clear(); now = null;
+    try {
+      gl = cvs.getContext('webgl2', { alpha: true, antialias: true, premultipliedAlpha: true, depth: true });
+      if (!gl) return;
+      leafP = program(VS_LEAF, FS_LEAF, ['u_c', 'u_r', 'u_al', 'u_front', 'u_back', 'u_fuv', 'u_buv', 'u_settle']);
+      pageP = program(VS_PAGE, FS_PAGE, ['u_tex', 'u_uv', 'u_side', 'u_c', 'u_r', 'u_al', 'u_env']);
+      const v = new Float32Array((NX + 1) * (NY + 1) * 2), ix = new Uint16Array(NX * NY * 6); let k = 0;
+      for (let j = 0; j <= NY; j++) for (let i = 0; i <= NX; i++) { v[k++] = i / NX; v[k++] = j / NY; }
+      k = 0;
+      for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) { const a = j * (NX + 1) + i, b = a + 1, c = a + NX + 1, d = c + 1; ix[k++] = a; ix[k++] = b; ix[k++] = c; ix[k++] = b; ix[k++] = d; ix[k++] = c; }
+      nIdx = ix.length;
+      vaoLeaf = gl.createVertexArray(); gl.bindVertexArray(vaoLeaf);
+      gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer()); gl.bufferData(gl.ARRAY_BUFFER, v, gl.STATIC_DRAW); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer()); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, ix, gl.STATIC_DRAW);
+      vaoQuad = gl.createVertexArray(); gl.bindVertexArray(vaoQuad);
+      gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer()); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, 0, 0, 0, -1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW);
+      gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+      gl.bindVertexArray(null);
+      gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.disable(gl.CULL_FACE); gl.frontFace(gl.CW);
+      ok = true;
+    } catch (e) { ok = false; }
+  }
+  function texture(i, im) {
+    let t = tex.get(i); if (t) return t;
+    const max = gl.getParameter(gl.MAX_TEXTURE_SIZE); let src = im;
+    if (im.naturalWidth > max) { const c = document.createElement('canvas'); c.width = max; c.height = Math.round(im.naturalHeight * max / im.naturalWidth); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); src = c; }
+    t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false); gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src); gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    const an = gl.getExtension('EXT_texture_filter_anisotropic');
+    if (an) gl.texParameterf(gl.TEXTURE_2D, an.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(8, gl.getParameter(an.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
+    tex.set(i, t);
+    for (const k of Array.from(tex.keys())) if (Math.abs(k - i) > 2) { gl.deleteTexture(tex.get(k)); tex.delete(k); }
+    return t;
+  }
+  function size(sheetW, sheetH) {
+    const w = sheetW / 2, d = Math.min(window.devicePixelRatio || 1, 2), cw = (2 + 2 * M) * w, ch = sheetH + 2 * M * w;
+    cvs.style.left = (-M * w) + 'px'; cvs.style.top = (-M * w) + 'px'; cvs.style.width = cw + 'px'; cvs.style.height = ch + 'px';
+    const pw = Math.round(cw * d), ph = Math.round(ch * d);
+    if (cvs.width !== pw || cvs.height !== ph) { cvs.width = pw; cvs.height = ph; }
+  }
+  /* the leaf between spreads lo and hi: its front is lo's right page, its back hi's left page; under it lie lo's left and hi's right */
+  function set(lo, hi, A, B, last) {
+    if (!ok) return;
+    const ta = texture(lo, A), tb = texture(hi, B);
+    now = { tl: lo === 0 ? null : ta, tr: hi === last ? null : tb, tf: ta, tb: tb, fuv: lo === 0 ? [0, 1] : [0.5, 0.5], buv: hi === last ? [0, 1] : [0, 0.5] };
+  }
+  const sm = (a, b, x) => { const q = Math.max(0, Math.min(1, (x - a) / (b - a))); return q * q * (3 - 2 * q); };
+  function render(t) {
+    if (!ok || !now) return;
+    t = Math.max(0, Math.min(1, t));
+    const al = AL0 * Math.pow(1 - t, 1.6), c = C0 * (1 - t), r = Math.max(1e-4, R0 * Math.pow(1 - t, 0.75));   // the corner lifts first; the roll tightens towards the spine
+    gl.viewport(0, 0, cvs.width, cvs.height); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.useProgram(pageP.p); gl.bindVertexArray(vaoQuad); gl.activeTexture(gl.TEXTURE0); gl.uniform1i(pageP.u.u_tex, 0);
+    gl.uniform1f(pageP.u.u_c, c); gl.uniform1f(pageP.u.u_r, r); gl.uniform1f(pageP.u.u_al, al); gl.uniform1f(pageP.u.u_env, sm(0, 0.1, t) * (1 - sm(0.9, 1, t)));
+    if (now.tl) { gl.bindTexture(gl.TEXTURE_2D, now.tl); gl.uniform2f(pageP.u.u_uv, 0, 0.5); gl.uniform1f(pageP.u.u_side, -1); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); }
+    if (now.tr) { gl.bindTexture(gl.TEXTURE_2D, now.tr); gl.uniform2f(pageP.u.u_uv, 0.5, 0.5); gl.uniform1f(pageP.u.u_side, 1); gl.drawArrays(gl.TRIANGLE_STRIP, 4, 4); }
+    gl.useProgram(leafP.p); gl.bindVertexArray(vaoLeaf);
+    gl.uniform1f(leafP.u.u_c, c); gl.uniform1f(leafP.u.u_r, r); gl.uniform1f(leafP.u.u_al, al); gl.uniform1f(leafP.u.u_settle, sm(0.8, 1, t));
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, now.tf); gl.uniform1i(leafP.u.u_front, 0);
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, now.tb); gl.uniform1i(leafP.u.u_back, 1);
+    gl.uniform2f(leafP.u.u_fuv, now.fuv[0], now.fuv[1]); gl.uniform2f(leafP.u.u_buv, now.buv[0], now.buv[1]);
+    gl.drawElements(gl.TRIANGLES, nIdx, gl.UNSIGNED_SHORT, 0);
+    gl.bindVertexArray(null);
+  }
+  cvs.addEventListener('webglcontextlost', e => { e.preventDefault(); ok = false; });
+  cvs.addEventListener('webglcontextrestored', init);
+  init();
+  return { get ok() { return ok; }, size, set, render, warm(i, im) { if (ok) { try { texture(i, im); } catch (e) {} } }, el: cvs };
+})();
+let curlHide = 0;
+const shiftOf = i => (i === 0 ? -25 : (i === LAST ? 25 : 0));
+function curlFrame(lo, hi, t) {                         // one moment of the turn; the book slides as its cover opens or closes
+  const u = t * t * (3 - 2 * t);
+  sheet.style.setProperty('--shift', (shiftOf(lo) + (shiftOf(hi) - shiftOf(lo)) * u) + '%');
+  sheet.style.setProperty('--pl', (lo === 0 ? 50 * (1 - u) : 0) + '%');
+  sheet.style.setProperty('--pr', (hi === LAST ? 50 * u : 0) + '%');
+  Curl.render(t);
+}
+function curlBegin(lo, hi, A, B, t) {
+  clearTimeout(curlHide); sheet.style.setProperty('--turn', '0ms');
+  Curl.size(sheetW, sheetH); Curl.set(lo, hi, A, B, LAST);
+  curlFrame(lo, hi, t); Curl.el.hidden = false; Curl.el.style.opacity = '1';
+}
+function curlEnd() { Curl.el.style.opacity = '0'; curlHide = setTimeout(() => { Curl.el.hidden = true; }, 200); }
+function curlRun(lo, hi, from, to, dur, out) {          // out: ease out only, for a page let go of mid-turn
+  return new Promise(res => {
+    const t0 = performance.now();
+    (function f(now) {
+      const q = Math.min(1, Math.max(0, (now - t0) / dur)), e = out ? 1 - Math.pow(1 - q, 3) : (q < 0.5 ? 4 * q * q * q : 1 - Math.pow(-2 * q + 2, 3) / 2);
+      curlFrame(lo, hi, from + (to - from) * e);
+      if (q < 1) requestAnimationFrame(f); else res();
+    })(t0);
+  });
+}
+async function turn(to, fast) {
+  if (!Curl.ok) return turnFlat(to, fast);
+  const lo = Math.min(cur, to), hi = Math.max(cur, to), fwd = to > cur;
+  const pair = await Promise.all([img(lo), img(hi)]);
+  curlBegin(lo, hi, pair[0], pair[1], fwd ? 0 : 1);
+  await curlRun(lo, hi, fwd ? 0 : 1, fwd ? 1 : 0, fast ? 560 : 1150);
+  cur = to; paintRest(fwd ? pair[1] : pair[0], to); curlEnd();
 }
 async function swap(to, instant) {
   const im = await img(to);
@@ -691,6 +863,7 @@ function settle() {
   $('#prev').disabled = cur === 0; $('#next').disabled = cur === LAST;
   trim();
   [cur + 1, cur - 1, cur + 2].forEach(i => { if (i >= 0 && i <= LAST) img(i).catch(() => {}); });
+  if (Curl.ok && mode === 'spreads') setTimeout(() => { if (busy) return; [cur, cur + 1, cur - 1].forEach(i => { const im = ready.get('s' + i); if (im) Curl.warm(i, im); }); }, 180);   // textures ready before the next turn
   clearTimeout(upT);
   if (mode === 'spreads' && sheetW * Math.min(window.devicePixelRatio || 1, 2) > 3000) {
     const i = cur; upT = setTimeout(() => { img(i, 'z').then(im => { if (i === cur && !busy && mode === 'spreads') paintRest(im, i); }, () => {}); }, 450);
@@ -741,7 +914,7 @@ function layout() {
   const changed = want !== mode; mode = want;
   const pages = mode === 'pages';
   sheet.hidden = pages; $('#prev').hidden = pages; $('#next').hidden = pages; scroller.hidden = !pages;
-  $('#hint').textContent = (matchMedia('(pointer:coarse)').matches ? 'Tap' : 'Click') + ' a page to zoom';
+  $('#hint').textContent = (Curl.ok && !pages && !reduced ? 'Drag a page to turn · ' : '') + (matchMedia('(pointer:coarse)').matches ? 'tap' : 'click') + ' to zoom';
   if (pages) { buildPages(); if (changed) scrollToSheet(cur, true); return; }
   const b = stage.getBoundingClientRect(), availW = b.width - 12, availH = b.height - 16;
   const w = Math.max(120, Math.floor(Math.min(availW, availH * RATIO))), h = Math.round(w / RATIO);
@@ -784,9 +957,9 @@ rest.addEventListener('click', e => {
   const b = sheet.getBoundingClientRect();
   openZoom(cur, (e.clientX - b.left) / b.width, (e.clientY - b.top) / b.height);
 });
-(function swipe() {
+(function swipe() {                                     // without the curl: a sideways swipe turns the page
   let sx = 0, sy = 0, id = null;
-  stage.addEventListener('pointerdown', e => { if (e.pointerType === 'mouse' || mode !== 'spreads') return; id = e.pointerId; sx = e.clientX; sy = e.clientY; });
+  stage.addEventListener('pointerdown', e => { if (Curl.ok || e.pointerType === 'mouse' || mode !== 'spreads') return; id = e.pointerId; sx = e.clientX; sy = e.clientY; });
   stage.addEventListener('pointerup', e => {
     if (e.pointerId !== id) return; id = null;
     const dx = e.clientX - sx, dy = e.clientY - sy;
@@ -794,6 +967,46 @@ rest.addEventListener('click', e => {
   });
   stage.addEventListener('pointercancel', () => { id = null; });
 })();
+/* with the curl: take a page and pull it across. The fold follows the pointer; let go past a fifth of the way and it
+   completes, otherwise it falls back. A press without movement is still a click, which zooms. */
+(function dragTurn() {
+  let g = null;
+  const across = e => { const b = sheet.getBoundingClientRect(); return ((e.clientX - b.left) / b.width - 0.5) * 2; };   // -1 .. 1 over the spread, 0 at the spine
+  const clamp01 = v => Math.max(0, Math.min(1, v));
+  rest.addEventListener('pointerdown', e => {
+    if (!Curl.ok || busy || reduced || mode !== 'spreads' || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    g = { id: e.pointerId, x0: e.clientX, y0: e.clientY, p0: across(e), on: false, t: 0 };
+  });
+  window.addEventListener('pointermove', e => {
+    if (!g || e.pointerId !== g.id || g.dead) return;
+    if (!g.on) {
+      const dx = e.clientX - g.x0;
+      if (Math.abs(dx) < 9 || Math.abs(dx) < Math.abs(e.clientY - g.y0)) return;
+      const fwd = dx < 0, to = cur + (fwd ? 1 : -1), lo = Math.min(cur, to), hi = Math.max(cur, to), A = ready.get('s' + lo), B = ready.get('s' + hi);
+      if (busy || to < 0 || to > LAST || !A || !B) { g.dead = true; return; }      // nothing to turn to: still a drag, so no zoom on release
+      busy = true; heading = to; foot.classList.add('loading');
+      g.on = true; g.fwd = fwd; g.to = to; g.lo = lo; g.hi = hi; g.A = A; g.B = B; g.p0 = across(e);
+      curlBegin(lo, hi, A, B, fwd ? 0 : 1);
+    }
+    const p = across(e);
+    g.t = g.fwd ? clamp01((g.p0 - p) / (g.p0 + 1.02)) : 1 - clamp01((p - g.p0) / (1.02 - g.p0));
+    curlFrame(g.lo, g.hi, g.t);
+  });
+  async function drop(cancel) {
+    const m = g; g = null;
+    if (!m || !m.on) return;
+    swiped = performance.now();
+    const commit = !cancel && (m.fwd ? m.t > 0.2 : m.t < 0.8), end = commit === m.fwd ? 1 : 0;
+    await curlRun(m.lo, m.hi, m.t, end, 240 + 620 * Math.abs(end - m.t), true);
+    if (commit) { cur = m.to; paintRest(m.fwd ? m.B : m.A, m.to); }
+    curlEnd(); swiped = performance.now();
+    busy = false; heading = null; foot.classList.remove('loading'); settle();
+    if (pending !== null) { const q = pending; pending = null; if (q !== cur) go(q, { fast: true }); }
+  }
+  window.addEventListener('pointerup', e => { if (!g || e.pointerId !== g.id) return; if (g.dead) { g = null; swiped = performance.now(); } else drop(false); });
+  window.addEventListener('pointercancel', e => { if (g && e.pointerId === g.id) drop(true); });
+})();
+if (/[?&]debug\b/.test(location.search)) window.__curl = (to, t) => Promise.all([img(Math.min(cur, to)), img(Math.max(cur, to))]).then(p => { curlBegin(Math.min(cur, to), Math.max(cur, to), p[0], p[1], t); return 'spread ' + cur + ' -> ' + to + ' at ' + t; });
 new ResizeObserver(() => { if (app.dataset.view === 'book') layout(); }).observe(stage);
 
 /* ---- zoom: the spread at reading size, panned by scrolling or dragging. fx, fy are fractions of the whole sheet. */
