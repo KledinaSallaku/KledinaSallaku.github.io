@@ -619,10 +619,36 @@ function paintHalf(c, im, i, side) {
   if (isSingle(i)) g.drawImage(im, 0, 0, im.naturalWidth, im.naturalHeight, 0, 0, c.width, c.height);
   else { const sw = im.naturalWidth / 2; g.drawImage(im, side === 'L' ? 0 : sw, 0, sw, im.naturalHeight, 0, 0, c.width, c.height); }
 }
-function paintRest(im, i) {
+/* a light unsharp pass on a finished picture: after scaling, small text and hairlines keep their edge */
+function sharpen(c, a) {
+  const g = c.getContext('2d'), w = c.width, h = c.height, row = w * 4, k = 1 + 4 * a; let id;
+  try { id = g.getImageData(0, 0, w, h); } catch (e) { return; }
+  const s = id.data, o = new Uint8ClampedArray(s);
+  for (let y = 1; y < h - 1; y++) {
+    let p = y * row + 4;
+    for (let x = 1; x < w - 1; x++, p += 4) {
+      s[p] = k * o[p] - a * (o[p - 4] + o[p + 4] + o[p - row] + o[p + row]);
+      s[p + 1] = k * o[p + 1] - a * (o[p - 3] + o[p + 5] + o[p + 1 - row] + o[p + 1 + row]);
+      s[p + 2] = k * o[p + 2] - a * (o[p - 2] + o[p + 6] + o[p + 2 - row] + o[p + 2 + row]);
+    }
+  }
+  g.putImageData(id, 0, 0);
+}
+/* fine: the picture is brought down to the screen's own pixels in halving steps (so no detail is skipped over) and then
+   sharpened. Used with the large image once a spread has settled; the quick version shows first. */
+function paintRest(im, i, fine) {
   rest.className = 'rest' + (i === 0 ? ' is-r' : (i === LAST ? ' is-l' : ''));
   const g = fit(rest, isSingle(i) ? sheetW / 2 : sheetW, sheetH);
-  g.drawImage(im, 0, 0, im.naturalWidth, im.naturalHeight, 0, 0, rest.width, rest.height);
+  let src = im, w = im.naturalWidth, h = im.naturalHeight;
+  if (fine) {
+    while (w > rest.width * 2.2) {
+      const t = document.createElement('canvas'); t.width = Math.round(w / 2); t.height = Math.round(h / 2);
+      const tg = t.getContext('2d'); tg.imageSmoothingEnabled = true; tg.imageSmoothingQuality = 'high'; tg.drawImage(src, 0, 0, w, h, 0, 0, t.width, t.height);
+      src = t; w = t.width; h = t.height;
+    }
+  }
+  g.drawImage(src, 0, 0, w, h, 0, 0, rest.width, rest.height);
+  if (fine) sharpen(rest, 0.2);
 }
 function frameFor(i, ms) {
   sheet.style.setProperty('--turn', ms + 'ms');
@@ -865,8 +891,16 @@ function settle() {
   [cur + 1, cur - 1, cur + 2].forEach(i => { if (i >= 0 && i <= LAST) img(i).catch(() => {}); });
   if (Curl.ok && mode === 'spreads') setTimeout(() => { if (busy) return; [cur, cur + 1, cur - 1].forEach(i => { const im = ready.get('s' + i); if (im) Curl.warm(i, im); }); }, 180);   // textures ready before the next turn
   clearTimeout(upT);
-  if (mode === 'spreads' && sheetW * Math.min(window.devicePixelRatio || 1, 2) > 3000) {
-    const i = cur; upT = setTimeout(() => { img(i, 'z').then(im => { if (i === cur && !busy && mode === 'spreads') paintRest(im, i); }, () => {}); }, 450);
+  if (mode === 'spreads') {                             // once the spread has settled, redraw it from the image that has pixels to spare
+    const i = cur, need = (isSingle(i) ? sheetW / 2 : sheetW) * Math.min(window.devicePixelRatio || 1, 2);
+    const tier = (isSingle(i) ? 1400 : 2800) >= need * 1.8 ? 's' : 'z';
+    upT = setTimeout(() => {
+      img(i, tier).then(im => {
+        if (i !== cur || busy || mode !== 'spreads') return;
+        paintRest(im, i, true);
+        if (tier === 'z' && i < LAST) { const warm = new Image(); warm.src = url(i + 1, 'z'); }      // the next spread's large image, fetched ahead
+      }, () => {});
+    }, 240);
   }
 }
 /* ---- one page per row for narrow, upright screens */
